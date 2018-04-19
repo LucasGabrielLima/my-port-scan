@@ -4,6 +4,7 @@
 #include <string.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/socket.h>
 
 //Returns start and end IP separated by a space character
 int *parse_ip_range(char* start){
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
   struct in_addr addr;
   char *ip_input; char *port_input; char *ip_end;
 	int *range;
-	int i;
+	int i, j, k, l;
 
   if(argc < 3){
   	printf("Error parsing params. Correct usage: porscan <IP address (or range)> <Port (range)>");
@@ -70,5 +71,6 @@ int main(int argc, char *argv[]) {
 
   range = parse_ip_range(ip_input);
 
+	free(range);
   return 0;
 }
