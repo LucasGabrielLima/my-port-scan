@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
   //in_addr struct has a single member s_addr
   struct in_addr addr;
   char *ip_input; char *port_input; char *ip_end;
-	int *range; int *port_range
+	int *range; int *port_range;
 	int i, j, k, l, m;
 
   if(argc < 3){
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 		for(j = range[1]; j <= range[1 + OFFSET]; j++){
 			for(k = range[2]; k <= range[2 + OFFSET]; k++){
 				for(l = range[3]; l <= range[3 + OFFSET]; l++){
-					for(m = port_range[0]; <= port_range[1]; m++){
+					for(m = port_range[0]; m <= port_range[1]; m++){
 
 					}
 				}
