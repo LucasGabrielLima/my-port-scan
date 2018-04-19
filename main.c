@@ -5,12 +5,13 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-//Returns 0 if no range is passed. Returns 1 if range is passed, with start and end on params
-int parse_ip_range(char* start, char* end){
-	char* token;
+//Returns start and end IP separated by a space character
+char *parse_ip_range(char* start){
+	char *range;
+	char *token;
 	char *bytes_start[4], *bytes_end[4];
 	int i = 0;
-	
+
 
 	//Separates IP's bytes by points
 	token = strtok(start, ".");
@@ -22,7 +23,6 @@ int parse_ip_range(char* start, char* end){
 	//Check for dashes on bytes
 	for(i = 0; i < 4; i++){
 		token = strtok(bytes_start[i], "-");
-		printf("%s\n", token );
 		bytes_start[i] = token;
 		token = strtok(NULL, "-");
 		if(token){
@@ -37,14 +37,15 @@ int parse_ip_range(char* start, char* end){
 		printf("start:%s     end:%s\n", bytes_start[i], bytes_end[i]);
 	}
 
-	return 1;
+	sprintf(range, "%s.%s.%s.%s %s.%s.%s.%s", bytes_start[0], bytes_start[1], bytes_start[2], bytes_start[3], bytes_end[0], bytes_end[1], bytes_end[2], bytes_end[3]);
+	return range;
 
 }
 
 int main(int argc, char *argv[]) {
   //in_addr struct has a single member s_addr
   struct in_addr addr;
-  char* ip_input; char* port_input; char* ip_end;
+  char *ip_input; char *port_input; char *ip_end; char *range;
 
   if(argc < 3){
   	printf("Error parsing params. Correct usage: porscan <IP address (or range)> <Port (range)>");
@@ -57,7 +58,8 @@ int main(int argc, char *argv[]) {
 
   printf("%s\n", ip_input);
 
-  parse_ip_range(ip_input, ip_end);
+  range = parse_ip_range(ip_input);
+	printf("%s", range);
 
   return 0;
 }
