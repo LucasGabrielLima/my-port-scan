@@ -9,7 +9,18 @@
 
 #define OFFSET 4
 
-//Returns start and end IP separated by a space character
+void parse_port_range(char *ports, int *port_range){
+	char *token;
+	int i = 0;
+
+	token = strtok(ports, "-");
+	while(token){
+		port_range[i++] = atoi(token);
+		token = strtok(NULL, "-");
+	}
+}
+
+//Returns start and end IP on a array
 int *parse_ip_range(char* start){
 	char *token;
 	char *bytes_start[4], *bytes_end[4];
@@ -45,10 +56,6 @@ int *parse_ip_range(char* start){
 		range[i + OFFSET] = atoi(bytes_end[i]);
 	}
 
-	for(i = 0; i < 8; i++){
-		printf("%d \n", range[i]);
-	}
-
 	// sprintf(range, "%s.%s.%s.%s %s.%s.%s.%s", bytes_start[0], bytes_start[1], bytes_start[2], bytes_start[3], bytes_end[0], bytes_end[1], bytes_end[2], bytes_end[3]);
 	return range;
 }
@@ -71,8 +78,12 @@ int main(int argc, char *argv[]) {
   	exit(1);
   }
 
-  ip_input = argv[1];
-  port_input = argv[2];
+	ip_input = argv[1];
+
+	if(argc == 3){
+		port_input = argv[2];
+		parse_port_range(port_input, port_range);
+	}
 
 
   printf("%s\n", ip_input);
@@ -91,7 +102,7 @@ int main(int argc, char *argv[]) {
 				for(l = range[3]; l <= range[3 + OFFSET]; l++){
 					sprintf(host, "%d.%d.%d.%d", i, j, k, l);
 					printf("Scanning host %s\n", host );
-					
+
 					for(p = port_range[0]; p <= port_range[1]; p++){
 						sock = socket(AF_INET, SOCK_STREAM, 0);
 						if(sock < 0){
@@ -99,9 +110,7 @@ int main(int argc, char *argv[]) {
 							exit(1);
 						}
 
-
 						init_target(&target, p, host);
-
 						conn = connect(sock, (struct sockaddr *)&target, sizeof(target));
 						if(conn == 0){
 							printf("Port open: %d\n", p);
