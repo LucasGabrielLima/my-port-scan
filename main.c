@@ -50,12 +50,21 @@ int *parse_ip_range(char* start){
 
 	for(i = 0; i < 4; i++){
 		range[i] = atoi(bytes_start[i]);
+		if(range[i] > 255){
+			printf("IP address or range not valid. Exiting...\n");
+			exit(1);
+		}
 	}
 
 	for(i = 0; i < 4; i++){
 		range[i + OFFSET] = atoi(bytes_end[i]);
+		if(range[i + OFFSET] > 255){
+			printf("IP address or range not valid. Exiting...\n");
+			exit(1);
+		}
 	}
 
+	printf("Scanning range %d.%d.%d.%d to %d.%d.%d.%d \n", range[0], range[1], range[2], range[3], range[4], range[5], range[6], range[7]);
 	// sprintf(range, "%s.%s.%s.%s %s.%s.%s.%s", bytes_start[0], bytes_start[1], bytes_start[2], bytes_start[3], bytes_end[0], bytes_end[1], bytes_end[2], bytes_end[3]);
 	return range;
 }
@@ -68,10 +77,12 @@ void init_target(struct sockaddr_in *target, int port, char *ip){
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in target;
-  char *ip_input; char *port_input; char host[16];
+  char *ip_input; char *port_input; char host[16]; char cmd[64];
 	int *range;
 	int port_range[] = {1, 65535};
-	int i, j, k, l, p, sock, conn;
+	//iterators for IP and port range
+	int i, j, k, l, p;
+	int sock, conn, hostdown;
 
   if(argc < 2){
   	printf("Error parsing params. Correct usage: porscan <IP address (or range)> [<Port range (xxx-yyy)>]");
@@ -80,20 +91,13 @@ int main(int argc, char *argv[]) {
 
 	ip_input = argv[1];
 
+	//If a port range was passed
 	if(argc == 3){
 		port_input = argv[2];
 		parse_port_range(port_input, port_range);
 	}
 
-
-  printf("%s\n", ip_input);
-
   range = parse_ip_range(ip_input);
-
-	for(i = 0; i < 8; i++){
-		printf("%d \n", range[i]);
-	}
-
 
 	//Iterates over IP and port ranges
 	for(i = range[0]; i <= range[0 + OFFSET]; i++){
@@ -102,8 +106,15 @@ int main(int argc, char *argv[]) {
 				for(l = range[3]; l <= range[3 + OFFSET]; l++){
 					sprintf(host, "%d.%d.%d.%d", i, j, k, l);
 					printf("Scanning host %s\n", host );
+					snprintf(cmd, sizeof(cmd), "ping %s -c 2 -W 1 > /dev/null", host);
+					if((hostdown = system(cmd))){
+						printf("Host %s unreacheable. Check if it responds to ping commands.\n", host);
+					}
 
 					for(p = port_range[0]; p <= port_range[1]; p++){
+						if(hostdown){
+							break;
+						}
 						sock = socket(AF_INET, SOCK_STREAM, 0);
 						if(sock < 0){
 							printf("Erro na criação do socket\n");
