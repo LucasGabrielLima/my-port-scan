@@ -6,6 +6,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define OFFSET 4
 
@@ -65,7 +66,6 @@ int *parse_ip_range(char* start){
 	}
 
 	printf("Scanning range %d.%d.%d.%d to %d.%d.%d.%d \n", range[0], range[1], range[2], range[3], range[4], range[5], range[6], range[7]);
-	// sprintf(range, "%s.%s.%s.%s %s.%s.%s.%s", bytes_start[0], bytes_start[1], bytes_start[2], bytes_start[3], bytes_end[0], bytes_end[1], bytes_end[2], bytes_end[3]);
 	return range;
 }
 
@@ -75,6 +75,14 @@ void init_target(struct sockaddr_in *target, int port, char *ip){
 	target->sin_addr.s_addr = inet_addr(ip);
 }
 
+int asyncconnected(int fd)
+{
+   struct sockaddr_in junk;
+   socklen_t length = sizeof(junk);
+   memset(&junk, 0, sizeof(junk));
+   return (getpeername(fd, (struct sockaddr *)&junk, &length) == 0);
+}
+
 int main(int argc, char *argv[]) {
 	struct sockaddr_in target;
   char *ip_input; char *port_input; char host[16]; char cmd[64];
@@ -82,7 +90,7 @@ int main(int argc, char *argv[]) {
 	int port_range[] = {1, 65535};
 	//iterators for IP and port range
 	int i, j, k, l, p;
-	int sock, conn, hostdown;
+	int sock, conn, hostdown, closed_ports;
 
   if(argc < 2){
   	printf("Error parsing params. Correct usage: porscan <IP address (or range)> [<Port range (xxx-yyy)>]");
@@ -106,10 +114,13 @@ int main(int argc, char *argv[]) {
 				for(l = range[3]; l <= range[3 + OFFSET]; l++){
 					sprintf(host, "%d.%d.%d.%d", i, j, k, l);
 					printf("Scanning host %s\n", host );
+
+					//check if host is up
 					snprintf(cmd, sizeof(cmd), "ping %s -c 2 -W 1 > /dev/null", host);
 					if((hostdown = system(cmd))){
 						printf("Host %s unreacheable. Check if it responds to ping commands.\n", host);
 					}
+					closed_ports = 0;
 
 					for(p = port_range[0]; p <= port_range[1]; p++){
 						if(hostdown){
@@ -117,23 +128,33 @@ int main(int argc, char *argv[]) {
 						}
 						sock = socket(AF_INET, SOCK_STREAM, 0);
 						if(sock < 0){
-							printf("Erro na criação do socket\n");
+							printf("Error creating socket. Exiting.\n");
 							exit(1);
+						}
+
+						if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK) == -1){
+								printf("Error setting non-blocking socket. Exiting.\n");
+								exit(1);
 						}
 
 						init_target(&target, p, host);
 						conn = connect(sock, (struct sockaddr *)&target, sizeof(target));
-						if(conn == 0){
+
+						//Timeout in 250 miliseconds
+						usleep(100 * 1000);
+						if(asyncconnected(sock)){
 							printf("Port open: %d\n", p);
 							close(conn);
 						}
 						else{
-							printf("Port closed: %d\n", p);
+							closed_ports++;
 							close(conn);
 						}
 
 						close(sock);
 					}
+
+					printf("Ports closed or filtered: %d\n", closed_ports);
 				}
 			}
 		}
