@@ -26,7 +26,7 @@ int *parse_ip_range(char* start){
 	char *token;
 	char *bytes_start[4], *bytes_end[4];
 	int *range = malloc(8 * sizeof(int));
-	int i = 0;
+	int i = 0, isrange = 0;
 
 
 	//Separates IP's bytes by points
@@ -63,9 +63,15 @@ int *parse_ip_range(char* start){
 			printf("IP address or range not valid. Exiting...\n");
 			exit(1);
 		}
+
+		if(range[i + OFFSET] != range[i]){
+			isrange = 1;
+		}
 	}
 
-	printf("Scanning range %d.%d.%d.%d to %d.%d.%d.%d \n", range[0], range[1], range[2], range[3], range[4], range[5], range[6], range[7]);
+	if(isrange){
+		printf("Scanning range %d.%d.%d.%d to %d.%d.%d.%d \n", range[0], range[1], range[2], range[3], range[4], range[5], range[6], range[7]);
+	}
 	return range;
 }
 
@@ -85,12 +91,12 @@ int asyncconnected(int fd)
 
 int main(int argc, char *argv[]) {
 	struct sockaddr_in target;
-  char *ip_input; char *port_input; char host[16]; char cmd[64];
+  char *ip_input; char *port_input; char host[16]; char cmd[64]; char buffer[4096];
 	int *range;
 	int port_range[] = {1, 65535};
 	//iterators for IP and port range
 	int i, j, k, l, p;
-	int sock, conn, hostdown, closed_ports;
+	int sock, conn, hostdown, closed_ports, n;
 
   if(argc < 2){
   	printf("Error parsing params. Correct usage: porscan <IP address (or range)> [<Port range (xxx-yyy)>]");
@@ -132,6 +138,7 @@ int main(int argc, char *argv[]) {
 							exit(1);
 						}
 
+						//Set socket to be non-blocking
 						if (fcntl(sock, F_SETFL, fcntl(sock, F_GETFL, 0) | O_NONBLOCK) == -1){
 								printf("Error setting non-blocking socket. Exiting.\n");
 								exit(1);
@@ -141,9 +148,17 @@ int main(int argc, char *argv[]) {
 						conn = connect(sock, (struct sockaddr *)&target, sizeof(target));
 
 						//Timeout in 250 miliseconds
-						usleep(100 * 1000);
+						usleep(250 * 1000);
 						if(asyncconnected(sock)){
 							printf("Port open: %d\n", p);
+							sleep(10);
+							n = read(sock, buffer, 4096);
+ 							if(n < 0){
+  							printf("[Error]: Could not read port banner.\n\n");
+ 							}
+							else{
+								printf("Banner: %s\n\n", buffer);
+							}
 							close(conn);
 						}
 						else{
@@ -154,7 +169,9 @@ int main(int argc, char *argv[]) {
 						close(sock);
 					}
 
-					printf("Ports closed or filtered: %d\n", closed_ports);
+					if(closed_ports){
+						printf("Ports closed or filtered: %d\n", closed_ports);
+					}
 				}
 			}
 		}
