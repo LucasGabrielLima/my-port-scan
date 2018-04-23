@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+//Offset for range array second address
 #define OFFSET 4
 
 void parse_port_range(char *ports, int *port_range){
@@ -72,15 +73,18 @@ int *parse_ip_range(char* start){
 	if(isrange){
 		printf("Scanning range %d.%d.%d.%d to %d.%d.%d.%d \n", range[0], range[1], range[2], range[3], range[4], range[5], range[6], range[7]);
 	}
+
 	return range;
 }
 
+//Initializes target's sockadrr_in struct
 void init_target(struct sockaddr_in *target, int port, char *ip){
 	target->sin_family = AF_INET;
 	target->sin_port = htons(port);
 	target->sin_addr.s_addr = inet_addr(ip);
 }
 
+//Check if non-blocking socket connected
 int asyncconnected(int fd)
 {
    struct sockaddr_in junk;
@@ -93,20 +97,19 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in target;
   char *ip_input; char *port_input; char host[16]; char cmd[64]; char buffer[4096];
 	int *range;
-	int port_range[] = {1, 65535};
-	//iterators for IP and port range
-	int i, j, k, l, p;
+	int port_range[] = {1, 65535}; //If no range is passed, test all ports
+	int i, j, k, l, p; //iterators for IP and port range
 	int sock, conn, hostdown, closed_ports, n;
 
   if(argc < 2){
-  	printf("Error parsing params. Correct usage: porscan <IP address (or range)> [<Port range (xxx-yyy)>]");
+  	printf("Correct usage: porscan <IP address (or range)> [<Port range (xxx-yyy)>]");
   	exit(1);
   }
 
 	ip_input = argv[1];
 
 	//If a port range was passed
-	if(argc == 3){
+	if(argc > 2){
 		port_input = argv[2];
 		parse_port_range(port_input, port_range);
 	}
