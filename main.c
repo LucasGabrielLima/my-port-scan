@@ -151,7 +151,6 @@ int main(int argc, char *argv[]) {
 						usleep(250 * 1000);
 						if(asyncconnected(sock)){
 							printf("Port open: %d\n", p);
-							sleep(10);
 							n = read(sock, buffer, 4096);
  							if(n < 0){
   							printf("[Error]: Could not read port banner.\n\n");
