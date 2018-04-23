@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-//Offset for range array second address
+//Offset for range array second address (see parse_ip_range)
 #define OFFSET 4
 
 void parse_port_range(char *ports, int *port_range){
@@ -22,7 +22,7 @@ void parse_port_range(char *ports, int *port_range){
 	}
 }
 
-//Returns start and end IP on a array
+//Returns start and end IP on an array
 int *parse_ip_range(char* start){
 	char *token;
 	char *bytes_start[4], *bytes_end[4];
@@ -85,8 +85,7 @@ void init_target(struct sockaddr_in *target, int port, char *ip){
 }
 
 //Check if non-blocking socket connected
-int asyncconnected(int fd)
-{
+int asyncconnected(int fd){
    struct sockaddr_in junk;
    socklen_t length = sizeof(junk);
    memset(&junk, 0, sizeof(junk));
@@ -129,6 +128,7 @@ int main(int argc, char *argv[]) {
 					if((hostdown = system(cmd))){
 						printf("Host %s unreacheable. Check if it responds to ping commands.\n", host);
 					}
+
 					closed_ports = 0;
 
 					for(p = port_range[0]; p <= port_range[1]; p++){
